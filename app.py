@@ -6,8 +6,9 @@ from typing import Dict
 
 # third party
 from dbtc import dbtCloudClient
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Request
 from requests import Session
+from mangum import Mangum
 
 
 app = FastAPI(title='PagerDuty')
@@ -51,7 +52,7 @@ async def pagerduty_webhook(request: Request):
     auth_header = request.headers.get('authorization', None)
     if not verify_signature(request_body, auth_header):
         raise HTTPException(status_code=403, detail='Message not authenticated')
-    
+
     response = await request.json()
     webhook_data = response['data']
     if webhook_data.get('runStatus', None) == 'Errored':
@@ -66,7 +67,6 @@ async def pagerduty_webhook(request: Request):
             try:
                 resource_list = data[resource]
             except TypeError:
-                
                 # No actual data was returned
                 pass
             else:
@@ -76,7 +76,8 @@ async def pagerduty_webhook(request: Request):
                         session.post(EVENTS_URL, json=payload)
 
     return
-    
-    
+
+handler = Mangum(app)
+
 if __name__ == '__main__':
     app.run()

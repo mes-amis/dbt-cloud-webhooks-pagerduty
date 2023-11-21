@@ -2,3 +2,4 @@ dbtc==0.3.4
 fastapi==0.89.1
 requests==2.28.2
 uvicorn==0.20.0
+mangum==0.17.0

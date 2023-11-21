@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+# https://docs.aws.amazon.com/lambda/latest/dg/python-package.html#python-package-dependencies
+
+set -e
+
+pip install -r requirements.txt --target package --upgrade
+
+cd package
+
+zip -r ../dbt-pagerduty-connector.zip .
+
+cd ..
+
+zip dbt-pagerduty-connector.zip app.py
+
+echo "Created dbt-pagerduty-connector.zip"
