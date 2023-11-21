@@ -1,8 +1,8 @@
-# dbt Cloud Webhooks - PagerDuty
+# PagerDuty Lambda
 
 ## Overview
 
-This repo contains code necessary to create PagerDuty alerts in the event of a job error.
+https://docs.getdbt.com/guides/serverless-pagerduty?step=1
 
 ## Requirements
 
@@ -17,7 +17,7 @@ Python 3.11+
 Clone this repo
 
 ```bash
-git clone https://github.com/dpguthrie/dbt-cloud-webhooks-pagerduty.git
+git clone https://github.com/mes-amis/dbt-cloud-webhooks-pagerduty.git
 ```
 
 ### Secrets
