@@ -2,6 +2,7 @@
 import hashlib
 import hmac
 import os
+import logging
 from typing import Dict
 
 # third party
@@ -10,14 +11,17 @@ from fastapi import FastAPI, HTTPException, Request
 from requests import Session
 from mangum import Mangum
 
+logging.basicConfig(level=logging.DEBUG)
+
+logger = logging.getLogger()
 
 app = FastAPI(title='PagerDuty')
-
 
 STATUSES = {
     'fail': 'critical',
     'error': 'critical',
 }
+
 RESOURCES = ['models', 'tests', 'seeds', 'snapshots']
 EVENTS_URL = 'https://events.pagerduty.com/v2/enqueue'
 
@@ -55,6 +59,8 @@ async def pagerduty_webhook(request: Request):
 
     response = await request.json()
     webhook_data = response['data']
+    logger.debug("Webhook Parameters:")
+    logger.debug(webhook_data)
     if webhook_data.get('runStatus', None) == 'Errored':
         client = dbtCloudClient()
         run_id = int(webhook_data['runId'])
