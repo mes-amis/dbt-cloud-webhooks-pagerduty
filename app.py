@@ -6,7 +6,6 @@ import logging
 from typing import Dict
 
 # third party
-from dbtc import dbtCloudClient
 from fastapi import FastAPI, HTTPException, Request
 from requests import Session
 from mangum import Mangum
@@ -20,26 +19,24 @@ app = FastAPI(title='PagerDuty')
 STATUSES = {
     'fail': 'critical',
     'error': 'critical',
+    'Errored': 'critical'
 }
 
 RESOURCES = ['models', 'tests', 'seeds', 'snapshots']
 EVENTS_URL = 'https://events.pagerduty.com/v2/enqueue'
 
 
-def build_payload(response: Dict, resource: Dict) -> Dict:
-    if resource['resourceType'] == 'model':
-        summary = resource['error']
-    else:
-        summary = f'Test failure - {resource["name"]}'
+def build_payload(webhook_response: Dict) -> Dict:
+    data = webhook_response['data']
     return {
         'routing_key': os.environ['PD_ROUTING_KEY'],
         'event_action': 'trigger',
-        'dedup_key': f'Run ID {resource["runId"]}',
+        'dedup_key': data['runId'],
         'payload': {
-            'timestamp': response['timestamp'],
-            'severity': STATUSES[resource['status']],
+            'timestamp': webhook_response['timestamp'],
+            'severity': STATUSES[data['runStatus']],
             'source': 'https://cloud.getdbt.com',
-            'summary': summary
+            'summary': f'{data["jobName"]} - {data["runStatus"]}'
         },
     }
 
@@ -58,28 +55,13 @@ async def pagerduty_webhook(request: Request):
         raise HTTPException(status_code=403, detail='Message not authenticated')
 
     response = await request.json()
-    webhook_data = response['data']
     logger.debug("Webhook Parameters:")
-    logger.debug(webhook_data)
-    if webhook_data.get('runStatus', None) == 'Errored':
-        client = dbtCloudClient()
-        run_id = int(webhook_data['runId'])
-        job_id = int(webhook_data['jobId'])
+    logger.debug(response)
+    if response['data'].get('runStatus', None) == 'Errored':
         session = Session()
         session.headers = {'Content-Type': 'application/json'}
-        for resource in RESOURCES:
-            method = f'get_{resource}'
-            data = getattr(client.metadata, method)(job_id, run_id=run_id)['data']
-            try:
-                resource_list = data[resource]
-            except TypeError:
-                # No actual data was returned
-                pass
-            else:
-                for item in resource_list:
-                    if item['status'] in STATUSES.keys():
-                        payload = build_payload(response, item)
-                        session.post(EVENTS_URL, json=payload)
+        payload = build_payload(response)
+        session.post(EVENTS_URL, json=payload)
 
     return
 
