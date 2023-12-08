@@ -57,7 +57,7 @@ async def pagerduty_webhook(request: Request):
     response = await request.json()
     logger.debug("Webhook Parameters:")
     logger.debug(response)
-    if response['data'].get('runStatus', None) == 'Errored':
+    if (response['data'].get('runStatus', None) == 'Errored') and (response['data'].get('jobName', None) != 'Pull Request Run - SlimCI '):
         session = Session()
         session.headers = {'Content-Type': 'application/json'}
         payload = build_payload(response)
