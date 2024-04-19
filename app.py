@@ -10,7 +10,7 @@ from fastapi import FastAPI, HTTPException, Request
 from requests import Session
 from mangum import Mangum
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger()
 
@@ -36,8 +36,8 @@ def build_payload(webhook_response: Dict) -> Dict:
             'timestamp': webhook_response['timestamp'],
             'severity': STATUSES[data['runStatus']],
             'source': 'https://cloud.getdbt.com',
-            'summary': f'{data["jobName"]} - {data["runStatus"]}'
-            'details': data["runStatusMessage"]
+            'summary': f'{data["jobName"]} - {data["runStatus"]}',
+            'details': f'{data["runStatusMessage"]}'
         },
     }
 
@@ -56,14 +56,13 @@ async def pagerduty_webhook(request: Request):
         raise HTTPException(status_code=403, detail='Message not authenticated')
 
     response = await request.json()
-    logger.debug("Webhook Parameters:")
-    logger.debug(response)
-    if (response['data'].get('runStatus', None) == 'Errored') and (response['data'].get('jobName', None) != 'Pull Request Run - SlimCI '):
+    logger.info("Webhook Parameters:")
+    logger.info(response)
+    if (response['data'].get('runStatus', None) == 'Errored'):
         session = Session()
         session.headers = {'Content-Type': 'application/json'}
         payload = build_payload(response)
         session.post(EVENTS_URL, json=payload)
-
     return
 
 handler = Mangum(app)
