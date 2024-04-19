@@ -37,6 +37,7 @@ def build_payload(webhook_response: Dict) -> Dict:
             'severity': STATUSES[data['runStatus']],
             'source': 'https://cloud.getdbt.com',
             'summary': f'{data["jobName"]} - {data["runStatus"]}'
+            'details': data["runStatusMessage"]
         },
     }
 
